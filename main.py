@@ -4,11 +4,21 @@ from discord.ext import commands
 import os, json, aiohttp
 
 GAMES_FILE = "games.json"
+
+# Load safely even if file is empty or broken
+games = {}
 if os.path.exists(GAMES_FILE):
-    with open(GAMES_FILE) as f:
-        games = json.load(f)
-else:
-    games = {}
+    try:
+        with open(GAMES_FILE) as f:
+            content = f.read().strip()
+            if content:
+                games = json.loads(content)
+            else:
+                games = {}
+    except json.JSONDecodeError:
+        print("⚠️ Warning: games.json is corrupted or empty. Resetting...")
+        games = {}
+
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
 
@@ -56,3 +66,4 @@ async def give(interaction: discord.Interaction, game_id: str):
         )
 
 bot.run(os.getenv("MTQxMzQ0MTIxNDU1NjAxMjU2NA.GhB8D8.5TSrq6gJtXztjh4lly3VvbddvXe8hXghFxaiE4"))
+
