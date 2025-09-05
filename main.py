@@ -76,13 +76,17 @@ async def addgame(interaction: discord.Interaction, file: discord.Attachment):
 async def give(interaction: discord.Interaction, game_id: str):
     if game_id not in games:
         await interaction.response.send_message(f"❌ No game found with ID `{game_id}`")
-    else:
-        base_url = os.getenv("RAILWAY_URL", "http://localhost:8080")
-        await interaction.response.send_message(
-            f"🎮 `{game_id}` → {base_url}{games[game_id]}"
-        )
+        return
+
+    # Use Railway public URL
+    base_url = os.getenv("RAILWAY_STATIC_URL") or os.getenv("RAILWAY_URL") or "http://localhost:8080"
+    await interaction.response.send_message(
+        f"🎮 `{game_id}` → {base_url}{games[game_id]}"
+    )
+
 
 bot.run(TOKEN)
+
 
 
 
