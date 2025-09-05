@@ -32,34 +32,7 @@ async def on_ready():
     await bot.tree.sync()
     print("🔧 Synced commands globally")
 
-@bot.tree.command(name="addgame", description="Upload a zip game file (admin only)")
-@app_commands.checks.has_permissions(administrator=True)
-async def addgame(interaction: discord.Interaction, file: discord.Attachment):
-    await interaction.response.defer(thinking=True)
 
-    if not file.filename.endswith(".zip"):
-        await interaction.followup.send("❌ Please upload a `.zip` file.")
-        return
-
-    os.makedirs("games", exist_ok=True)
-    save_path = os.path.join("games", file.filename)
-
-    # Download file from Discord to our server
-    async with aiohttp.ClientSession() as session:
-        async with session.get(file.url) as resp:
-            if resp.status != 200:
-                await interaction.followup.send("❌ Failed to download file.")
-                return
-            with open(save_path, "wb") as f:
-                f.write(await resp.read())
-
-    # Save game ID (name without .zip)
-    game_id = file.filename.replace(".zip", "")
-    games[game_id] = f"/{file.filename}"
-    with open(GAMES_FILE, "w") as f:
-        json.dump(games, f, indent=4)
-
-    await interaction.followup.send(f"✅ Added `{game_id}` → {file.filename}")
 
 @bot.tree.command(name="addgame", description="Upload a zip game file (admin only)")
 @app_commands.checks.has_permissions(administrator=True)
@@ -110,5 +83,6 @@ async def give(interaction: discord.Interaction, game_id: str):
         )
 
 bot.run(TOKEN)
+
 
 
