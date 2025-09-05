@@ -1,13 +1,18 @@
-import os
-import json
-import aiohttp
 import discord
-from discord import app_commands
 from discord.ext import commands
+from discord import app_commands
+import aiohttp
+import json
+import os
+import asyncio
+
+TOKEN = os.getenv("DISCORD_TOKEN")
+if not TOKEN:
+    raise RuntimeError("❌ DISCORD_TOKEN not found. Add it in Railway Variables.")
 
 GAMES_FILE = "games.json"
 
-# Load games.json (safe fallback if empty)
+# Load games
 if os.path.exists(GAMES_FILE):
     with open(GAMES_FILE, "r") as f:
         try:
@@ -18,6 +23,7 @@ else:
     games = {}
 
 intents = discord.Intents.default()
+intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
@@ -28,7 +34,6 @@ async def on_ready():
 
 @bot.tree.command(name="addgame", description="Upload a zip game file (admin only)")
 @app_commands.checks.has_permissions(administrator=True)
-@app_commands.describe(file="Upload the game ZIP file here")
 async def addgame(interaction: discord.Interaction, file: discord.Attachment):
     await interaction.response.defer(thinking=True)
 
@@ -39,17 +44,18 @@ async def addgame(interaction: discord.Interaction, file: discord.Attachment):
     os.makedirs("games", exist_ok=True)
     save_path = os.path.join("games", file.filename)
 
-    # Download file from Discord
+    # Download file from Discord to our server
     async with aiohttp.ClientSession() as session:
         async with session.get(file.url) as resp:
             if resp.status != 200:
-                await interaction.followup.send("❌ Failed to download file from Discord.")
+                await interaction.followup.send("❌ Failed to download file.")
                 return
             with open(save_path, "wb") as f:
                 f.write(await resp.read())
 
+    # Save game ID (name without .zip)
     game_id = file.filename.replace(".zip", "")
-    games[game_id] = f"/games/{file.filename}"
+    games[game_id] = f"/{file.filename}"
     with open(GAMES_FILE, "w") as f:
         json.dump(games, f, indent=4)
 
@@ -66,8 +72,5 @@ async def give(interaction: discord.Interaction, game_id: str):
             f"🎮 `{game_id}` → {base_url}{games[game_id]}"
         )
 
-# Run bot using environment variable
-TOKEN = os.getenv("DISCORD_TOKEN")
-if not TOKEN:
-    raise RuntimeError("❌ DISCORD_TOKEN environment variable not set!")
 bot.run(TOKEN)
+
