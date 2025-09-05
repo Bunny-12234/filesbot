@@ -61,6 +61,43 @@ async def addgame(interaction: discord.Interaction, file: discord.Attachment):
 
     await interaction.followup.send(f"✅ Added `{game_id}` → {file.filename}")
 
+@bot.tree.command(name="addgame", description="Upload a zip game file (admin only)")
+@app_commands.checks.has_permissions(administrator=True)
+async def addgame(interaction: discord.Interaction, file: discord.Attachment):
+    await interaction.response.defer(thinking=True)
+
+    if not file.filename.endswith(".zip"):
+        await interaction.followup.send("❌ Please upload a `.zip` file.")
+        return
+
+    os.makedirs("games", exist_ok=True)
+    save_path = os.path.join("games", file.filename)
+
+    try:
+        import asyncio, aiohttp
+        timeout = aiohttp.ClientTimeout(total=30)  # 30 sec max
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(file.url) as resp:
+                if resp.status != 200:
+                    await interaction.followup.send(f"❌ Failed to download file (status {resp.status}).")
+                    return
+                data = await resp.read()
+                with open(save_path, "wb") as f:
+                    f.write(data)
+    except asyncio.TimeoutError:
+        await interaction.followup.send("⏳ Download timed out. Try again with a smaller file.")
+        return
+    except Exception as e:
+        await interaction.followup.send(f"❌ Error: {e}")
+        return
+
+    # Save game ID
+    game_id = file.filename.replace(".zip", "")
+    games[game_id] = f"/{file.filename}"
+    with open(GAMES_FILE, "w") as f:
+        json.dump(games, f, indent=4)
+
+    await interaction.followup.send(f"✅ Added `{game_id}` → {file.filename}")
 @bot.tree.command(name="give", description="Get the download link for a game")
 @app_commands.describe(game_id="The ID of the game to get")
 async def give(interaction: discord.Interaction, game_id: str):
@@ -73,4 +110,5 @@ async def give(interaction: discord.Interaction, game_id: str):
         )
 
 bot.run(TOKEN)
+
 
