@@ -2,8 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import os, json, aiohttp
-from dotenv import load_dotenv
-load_dotenv()
+
 
 GAMES_FILE = "games.json"
 
@@ -68,6 +67,7 @@ async def give(interaction: discord.Interaction, game_id: str):
         )
 
 bot.run("MTQxMzQ0MTIxNDU1NjAxMjU2NA.GhB8D8.5TSrq6gJtXztjh4lly3VvbddvXe8hXghFxaiE4")
+
 
 
 
