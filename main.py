@@ -79,13 +79,14 @@ async def give(interaction: discord.Interaction, game_id: str):
         return
 
     # Use Railway public URL
-    base_url = os.getenv("RAILWAY_STATIC_URL") or os.getenv("RAILWAY_URL") or "http://localhost:8080"
+    base_url = "https://filesbot-production.up.railway.app"
     await interaction.response.send_message(
         f"🎮 `{game_id}` → {base_url}{games[game_id]}"
     )
 
 
 bot.run(TOKEN)
+
 
 
 
