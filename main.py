@@ -65,5 +65,6 @@ async def give(interaction: discord.Interaction, game_id: str):
             f"🎮 `{game_id}` → {base_url}{games[game_id]}"
         )
 
-bot.run(os.getenv("MTQxMzQ0MTIxNDU1NjAxMjU2NA.GhB8D8.5TSrq6gJtXztjh4lly3VvbddvXe8hXghFxaiE4"))
+bot.run(os.getenv("DISCORD_TOKEN"))
+
 
