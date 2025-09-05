@@ -1,27 +1,24 @@
+import os
+import json
+import aiohttp
 import discord
 from discord import app_commands
 from discord.ext import commands
-import os, json, aiohttp
-
 
 GAMES_FILE = "games.json"
 
-# Load safely even if file is empty or broken
-games = {}
+# Load games.json (safe fallback if empty)
 if os.path.exists(GAMES_FILE):
-    try:
-        with open(GAMES_FILE) as f:
-            content = f.read().strip()
-            if content:
-                games = json.loads(content)
-            else:
-                games = {}
-    except json.JSONDecodeError:
-        print("⚠️ Warning: games.json is corrupted or empty. Resetting...")
-        games = {}
+    with open(GAMES_FILE, "r") as f:
+        try:
+            games = json.load(f)
+        except json.JSONDecodeError:
+            games = {}
+else:
+    games = {}
 
-
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
+intents = discord.Intents.default()
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
@@ -31,6 +28,7 @@ async def on_ready():
 
 @bot.tree.command(name="addgame", description="Upload a zip game file (admin only)")
 @app_commands.checks.has_permissions(administrator=True)
+@app_commands.describe(file="Upload the game ZIP file here")
 async def addgame(interaction: discord.Interaction, file: discord.Attachment):
     await interaction.response.defer(thinking=True)
 
@@ -41,15 +39,17 @@ async def addgame(interaction: discord.Interaction, file: discord.Attachment):
     os.makedirs("games", exist_ok=True)
     save_path = os.path.join("games", file.filename)
 
-    # Download file from Discord to our server
+    # Download file from Discord
     async with aiohttp.ClientSession() as session:
         async with session.get(file.url) as resp:
+            if resp.status != 200:
+                await interaction.followup.send("❌ Failed to download file from Discord.")
+                return
             with open(save_path, "wb") as f:
                 f.write(await resp.read())
 
-    # Save game ID (name without .zip)
     game_id = file.filename.replace(".zip", "")
-    games[game_id] = f"/{file.filename}"
+    games[game_id] = f"/games/{file.filename}"
     with open(GAMES_FILE, "w") as f:
         json.dump(games, f, indent=4)
 
@@ -66,9 +66,8 @@ async def give(interaction: discord.Interaction, game_id: str):
             f"🎮 `{game_id}` → {base_url}{games[game_id]}"
         )
 
-bot.run("MTQxMzQ0MTIxNDU1NjAxMjU2NA.GhB8D8.5TSrq6gJtXztjh4lly3VvbddvXe8hXghFxaiE4")
-
-
-
-
-
+# Run bot using environment variable
+TOKEN = os.getenv("DISCORD_TOKEN")
+if not TOKEN:
+    raise RuntimeError("❌ DISCORD_TOKEN environment variable not set!")
+bot.run(TOKEN)
